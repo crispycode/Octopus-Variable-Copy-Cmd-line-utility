@@ -30,6 +30,11 @@ namespace OctopusDeployVariableCopy.OctopusAccess
             return _repository.LibraryVariableSets.FindAll();
         }
 
+        public List<EnvironmentResource> GetEnvironments()
+        {
+            return _repository.Environments.FindAll();
+        }
+
         public LibraryVariableSetResource GetLibraryVariableSetByName(string name)
         {
             Func<LibraryVariableSetResource, bool> searchMethod = delegate(LibraryVariableSetResource libVarSet)

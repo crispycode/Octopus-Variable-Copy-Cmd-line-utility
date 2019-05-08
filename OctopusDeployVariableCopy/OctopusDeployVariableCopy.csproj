@@ -68,6 +68,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BL Layer\CopyRules.cs" />
     <Compile Include="BL Layer\OctopusHandler.cs" />
     <Compile Include="OctopusAccess\OctopusAccessor.cs" />
     <Compile Include="Program.cs" />

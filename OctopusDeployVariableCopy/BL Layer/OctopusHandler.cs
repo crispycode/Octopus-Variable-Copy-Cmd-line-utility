@@ -2,9 +2,6 @@
 using OctopusDeployVariableCopy.OctopusAccess;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OctopusDeployVariableCopy.BL_Layer
 {
@@ -17,33 +14,43 @@ namespace OctopusDeployVariableCopy.BL_Layer
             _octoDal = new OctopusAccessor(server, apiKey);
         }
 
-        public void CopyVariableSet(string varSetName, string newVarSetName, int numberOfCopies = 1, bool keepTheScope = true)
+        public void CopyVariableSet(CopyRules copyRules)
         {
             try
             {
-                var originalLibVarSet = _octoDal.GetLibraryVariableSetByName(varSetName);
-                var originalVariables = _octoDal.GetVariableSet(originalLibVarSet.VariableSetId).Variables;
-                var emptyScope = new ScopeSpecification();
+                var originalLibVarSet = _octoDal.GetLibraryVariableSetByName(copyRules.VariableSetNameToCopy);
+                var originalVariables = _octoDal.GetVariableSet(originalLibVarSet.VariableSetId).Variables;                                                   
                 
                 string copiedNumber = null;
-                for (int i = 0; i < numberOfCopies; i++)
+                for (int i = 0; i < copyRules.NumberOfCopies; i++)
                 {
                     if (i > 0)
                     {
                         copiedNumber = i.ToString();
                     }
-                    var newVarSet = _octoDal.CreateNewLibraryVariableSetWithVariableSet($"{newVarSetName}{copiedNumber}", originalLibVarSet.Description);
+                    var newVarSet = _octoDal.CreateNewLibraryVariableSetWithVariableSet(string.Concat(copyRules.NewVariableSetName, copiedNumber), originalLibVarSet.Description);
                     foreach (var variable in originalVariables)
                     {
-                        if(keepTheScope)
+                        var value = copyRules.KeepValues ? variable.Value : "";
+                        if(copyRules.OverwriteEnvironmentScope)
                         {
-                            _octoDal.AddVariableToVariableSet(newVarSet.VariableSetId, variable.Name, variable.Value, variable.Scope, variable.IsEditable, variable.IsSensitive, variable.Prompt);
-                        }
-                        else
-                        {
-                            _octoDal.AddVariableToVariableSet(newVarSet.VariableSetId, variable.Name, variable.Value, emptyScope, variable.IsEditable, variable.IsSensitive, variable.Prompt);
+                            variable.Scope.Remove(ScopeField.Environment);
+                            if (!string.IsNullOrEmpty(copyRules.NewEnvironmentScope))
+                            {
+                                variable.Scope.Add(ScopeField.Environment, copyRules.NewEnvironmentScope);
+                            }                            
                         }
 
+                        if (copyRules.OverwriteRoleScope)
+                        {
+                            variable.Scope.Remove(ScopeField.Role);
+                            if (!string.IsNullOrEmpty(copyRules.NewRoleScope))
+                            {
+                                variable.Scope.Add(ScopeField.Role, copyRules.NewRoleScope);
+                            }
+                        }                        
+
+                        _octoDal.AddVariableToVariableSet(newVarSet.VariableSetId, variable.Name, value ?? "", variable.Scope, variable.IsEditable, variable.IsSensitive, variable.Prompt);
                     }
 
                 }
@@ -69,6 +76,25 @@ namespace OctopusDeployVariableCopy.BL_Layer
             catch(Exception e)
             {
                 throw new Exception("Failed to get all of the library variable sets", e);
+            }
+
+        }
+
+        public Dictionary<string, string> GetAllEnvironmentsAvaialable()
+        {
+            try
+            {
+                var result = new Dictionary<string, string>();
+                var environments = _octoDal.GetEnvironments();
+                foreach (var environment in environments)
+                {
+                    result.Add(environment.Name, environment.Id);
+                }
+                return result;
+            }
+            catch (Exception e)
+            {
+                throw new Exception("Failed to get all of the environment resources", e);
             }
 
         }
