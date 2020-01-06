@@ -87,6 +87,11 @@ namespace OctopusDeployVariableCopy.OctopusAccess
             varSet.Variables.Add(variable);
             _repository.VariableSets.Modify(varSet);
         }
-        
+
+
+        public void ModifyLibraryVariableSet(VariableSetResource varSet)
+        {
+            _repository.VariableSets.Modify(varSet);
+        }
     }
 }

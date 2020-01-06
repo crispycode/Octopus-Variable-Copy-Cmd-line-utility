@@ -2,6 +2,7 @@
 using OctopusDeployVariableCopy.OctopusAccess;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace OctopusDeployVariableCopy.BL_Layer
 {
@@ -19,7 +20,7 @@ namespace OctopusDeployVariableCopy.BL_Layer
             try
             {
                 var originalLibVarSet = _octoDal.GetLibraryVariableSetByName(copyRules.VariableSetNameToCopy);
-                var originalVariables = _octoDal.GetVariableSet(originalLibVarSet.VariableSetId).Variables;                                                   
+                var originalVariables = _octoDal.GetVariableSet(originalLibVarSet.VariableSetId).Variables;
                 
                 string copiedNumber = null;
                 for (int i = 0; i < copyRules.NumberOfCopies; i++)
@@ -59,6 +60,26 @@ namespace OctopusDeployVariableCopy.BL_Layer
             {
                 throw new Exception("Failed to copy the variable set", e);
             }
+        }
+
+        public void AddVariableSetEnvironments(string variableSetName, string environmentId) {
+            var originalLibVarSet = _octoDal.GetLibraryVariableSetByName(variableSetName);
+            var originalVarSet = _octoDal.GetVariableSet(originalLibVarSet.VariableSetId);
+
+            foreach (var var in originalVarSet.Variables)
+            {
+                if (var.Scope.Any(x => x.Key == ScopeField.Environment)) {
+                    var envScope = var.Scope[ScopeField.Environment];
+                    if (!envScope.Contains(environmentId)) {
+                        envScope.Add(environmentId);
+                    }
+                }
+                else {
+                    var.Scope.Add(ScopeField.Environment, environmentId);
+                }
+            }
+
+            _octoDal.ModifyLibraryVariableSet(originalVarSet);
         }
 
         public Dictionary<string, string> GetAllLibraryVariableSetsAvaialable()
